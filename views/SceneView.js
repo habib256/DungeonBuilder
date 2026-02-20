@@ -1,19 +1,42 @@
 // View: Gestion de la scène Three.js, caméra, rendu et contrôles
 
 class SceneView {
-    constructor() {
+    constructor(eventBus) {
+        this.eventBus = eventBus;
+
+        // Scène
         this.scene = new THREE.Scene();
+
+        // Caméra
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        this.renderer = new THREE.WebGLRenderer();
+        this.camera.position.set(0, 20, 20);
+
+        // Rendu
+        this.renderer = new THREE.WebGLRenderer({ antialias: true });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.shadowMap.enabled = true;
         document.body.appendChild(this.renderer.domElement);
 
+        // Contrôles orbitaux
         this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
-        this.camera.position.set(0, 20, 20);
         this.controls.update();
 
+        // Écran de chargement
         this.pleaseWaitMesh = null;
+
+        // Gestion du redimensionnement
+        window.addEventListener('resize', () => this.onWindowResize());
+
+        // Écouter les événements
+        this.eventBus.on(EventBus.Events.LOADING_START, () => this.showLoading());
+        this.eventBus.on(EventBus.Events.LOADING_COMPLETE, () => this.hideLoading());
+    }
+
+    onWindowResize() {
+        this.camera.aspect = window.innerWidth / window.innerHeight;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
     addToScene(object) {
@@ -39,6 +62,7 @@ class SceneView {
     hideLoading() {
         if (this.pleaseWaitMesh) {
             this.scene.remove(this.pleaseWaitMesh);
+            this.pleaseWaitMesh = null;
         }
     }
 

@@ -1,11 +1,13 @@
 // View: Création et rendu des lumières Three.js
 
 class LightView {
-    constructor() {
+    constructor(eventBus) {
+        this.eventBus = eventBus;
         this.lights = [];
     }
 
     createLights(lightDataList) {
+        this.lights = [];
         for (const data of lightDataList) {
             let light;
             if (data.type === 'point') {
