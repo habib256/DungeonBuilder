@@ -10,14 +10,27 @@
     </style>
 </head>
 <body>
+    <!-- Librairies Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="block.js"></script>
-    <script src="lights.js"></script>
-    <script src="dungeon.js"></script>
-    <script src="monsters.js"></script>
-    <script src="heroes.js"></script>
+
+    <!-- Models -->
+    <script src="models/BlockCatalog.js"></script>
+    <script src="models/MapData.js"></script>
+    <script src="models/EntityData.js"></script>
+    <script src="models/LightData.js"></script>
+
+    <!-- Views -->
+    <script src="views/SceneView.js"></script>
+    <script src="views/DungeonView.js"></script>
+    <script src="views/EntityView.js"></script>
+    <script src="views/LightView.js"></script>
+
+    <!-- Controllers -->
+    <script src="controllers/GameController.js"></script>
+
+    <!-- Point d'entrée -->
     <script src="main.js"></script>
 </body>
 </html>
