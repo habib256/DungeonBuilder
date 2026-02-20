@@ -49,4 +49,14 @@ EventBus.Events = {
     // Scène
     SCENE_OBJECT_ADDED: 'scene:objectAdded',
     SCENE_OBJECT_REMOVED: 'scene:objectRemoved',
+
+    // Éditeur
+    EDITOR_BLOCK_SELECTED: 'editor:blockSelected',
+    EDITOR_BLOCK_PLACED: 'editor:blockPlaced',
+    EDITOR_BLOCK_REMOVED: 'editor:blockRemoved',
+    EDITOR_ROTATION_CHANGED: 'editor:rotationChanged',
+    EDITOR_MAP_CLEARED: 'editor:mapCleared',
+    EDITOR_MAP_EXPORTED: 'editor:mapExported',
+    EDITOR_MAP_IMPORTED: 'editor:mapImported',
+    EDITOR_MODE_CHANGED: 'editor:modeChanged',
 };

@@ -18,6 +18,10 @@ class GameController {
         this.heroesView = new EntityView(eventBus, this.stlLoaderService);
         this.lightView = new LightView(eventBus);
 
+        // Éditeur
+        this.editorModel = new EditorModel(eventBus);
+        this.editorController = null;
+
         // Écouter les événements
         this.setupEventListeners();
     }
@@ -70,6 +74,9 @@ class GameController {
             this.gameModel.setDungeonReady(true);
 
             console.log(`Chargement de la map du donjon ${this.gameModel.currentMapNb} terminé`);
+
+            // Initialiser l'éditeur une fois les blocs chargés
+            this.initEditor();
         }).catch(error => {
             console.error('Erreur lors du chargement du donjon:', error);
         });
@@ -93,6 +100,18 @@ class GameController {
         Promise.all([monstersPromise, heroesPromise]).then(() => {
             this.gameModel.setEntitiesReady(true);
         });
+    }
+
+    initEditor() {
+        if (!this.editorController) {
+            this.editorController = new EditorController(
+                this.eventBus,
+                this.sceneView,
+                this.dungeonView,
+                this.editorModel
+            );
+        }
+        this.editorController.init();
     }
 
     reloadDungeon() {
