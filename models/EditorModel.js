@@ -35,7 +35,7 @@ class EditorModel {
 
     rotateBlock(direction) {
         this.currentRotationY += direction * (Math.PI / 2);
-        this.currentRotationY = this.currentRotationY % (Math.PI * 2);
+        this.currentRotationY = ((this.currentRotationY % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
         this.eventBus.emit(EventBus.Events.EDITOR_ROTATION_CHANGED, {
             rotationY: this.currentRotationY
         });

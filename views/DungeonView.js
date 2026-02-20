@@ -55,7 +55,11 @@ class DungeonView {
     }
 
     clearWorld(scene) {
-        this.worldMeshes.forEach(mesh => scene.remove(mesh));
+        this.worldMeshes.forEach(mesh => {
+            scene.remove(mesh);
+            if (mesh.geometry) mesh.geometry.dispose();
+            if (mesh.material) mesh.material.dispose();
+        });
         this.worldMeshes = [];
     }
 }

@@ -48,20 +48,29 @@ class SceneView {
     }
 
     showLoading() {
+        this.isLoadingActive = true;
         const loader = new THREE.STLLoader();
         loader.load('PleaseWait.stl', (geometry) => {
+            // Si hideLoading() a déjà été appelé avant la fin du chargement, ne pas ajouter le mesh
+            if (!this.isLoadingActive) {
+                geometry.dispose();
+                return;
+            }
             const material = new THREE.MeshPhongMaterial({ color: 0xffffff, specular: 0x111111, shininess: 100 });
             this.pleaseWaitMesh = new THREE.Mesh(geometry, material);
             this.pleaseWaitMesh.receiveShadow = true;
             this.pleaseWaitMesh.scale.set(0.15, 0.15, 0.15);
-            this.pleaseWaitMesh.rotation.set(-7, 0, 0);
+            this.pleaseWaitMesh.rotation.set(-Math.PI / 4, 0, 0);
             this.scene.add(this.pleaseWaitMesh);
         });
     }
 
     hideLoading() {
+        this.isLoadingActive = false;
         if (this.pleaseWaitMesh) {
             this.scene.remove(this.pleaseWaitMesh);
+            this.pleaseWaitMesh.geometry.dispose();
+            this.pleaseWaitMesh.material.dispose();
             this.pleaseWaitMesh = null;
         }
     }

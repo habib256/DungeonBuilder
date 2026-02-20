@@ -85,6 +85,7 @@ class MapData {
     static generatePatternMap() {
         const blocks = [];
         const G = MapData.GRID_SPACING;
+        const Y = MapData.FLOOR_Y_OFFSET;
         for (let i = -5; i < 5; i++) {
             for (let j = -5; j < 5; j++) {
                 let blockType;
@@ -99,7 +100,7 @@ class MapData {
                 } else {
                     blockType = 47;
                 }
-                blocks.push([blockType, i * G, 0, j * G, -Math.PI / 2, 0, Math.PI / 2]);
+                blocks.push([blockType, i * G, Y, j * G, -Math.PI / 2, 0, Math.PI / 2]);
             }
         }
         return blocks;

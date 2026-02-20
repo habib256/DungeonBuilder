@@ -107,9 +107,9 @@ class EditorController {
         const height = this.editorView.currentHeight;
         const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -height);
         const intersection = new THREE.Vector3();
-        this.raycaster.ray.intersectPlane(plane, intersection);
+        const result = this.raycaster.ray.intersectPlane(plane, intersection);
 
-        if (intersection) {
+        if (result) {
             const G = MapData.GRID_SPACING;
             intersection.x = Math.round(intersection.x / G) * G;
             intersection.z = Math.round(intersection.z / G) * G;
@@ -219,6 +219,12 @@ class EditorController {
     removePreview() {
         if (this.previewMesh) {
             this.sceneView.scene.remove(this.previewMesh);
+            if (this.previewMesh.material) {
+                this.previewMesh.material.dispose();
+            }
+            if (this.previewMesh.geometry) {
+                this.previewMesh.geometry.dispose();
+            }
             this.previewMesh = null;
         }
     }
@@ -226,6 +232,8 @@ class EditorController {
     clearAllEditorBlocks() {
         this.editorMeshes.forEach(mesh => {
             this.sceneView.scene.remove(mesh);
+            if (mesh.geometry) mesh.geometry.dispose();
+            if (mesh.material) mesh.material.dispose();
         });
         this.editorMeshes = [];
         this.editorModel.clearAllBlocks();

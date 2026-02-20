@@ -20,7 +20,11 @@ class EntityView {
     }
 
     clearEntities(scene) {
-        this.meshes.forEach(mesh => scene.remove(mesh));
+        this.meshes.forEach(mesh => {
+            scene.remove(mesh);
+            if (mesh.geometry) mesh.geometry.dispose();
+            if (mesh.material) mesh.material.dispose();
+        });
         this.meshes = [];
     }
 }

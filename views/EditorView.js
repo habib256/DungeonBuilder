@@ -258,8 +258,8 @@ class EditorView {
             });
         });
 
-        // Raccourcis clavier
-        document.addEventListener('keydown', (e) => {
+        // Raccourcis clavier - stocker la référence pour pouvoir la retirer dans destroy()
+        this.keydownHandler = (e) => {
             // Ignorer si on tape dans un input
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
@@ -284,7 +284,8 @@ class EditorView {
                     this.container.classList.toggle('collapsed');
                     break;
             }
-        });
+        };
+        document.addEventListener('keydown', this.keydownHandler);
     }
 
     updateHeight() {
@@ -367,6 +368,10 @@ class EditorView {
     }
 
     destroy() {
+        if (this.keydownHandler) {
+            document.removeEventListener('keydown', this.keydownHandler);
+            this.keydownHandler = null;
+        }
         if (this.container) {
             this.container.remove();
             this.container = null;

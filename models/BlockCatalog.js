@@ -30,6 +30,7 @@ class BlockCatalog {
         const rG = BlockCatalog.getDefaultRotationGround();
 
         return [
+            // NB: Doublon volontaire de l'index 17 (UD-017) pour avoir le sol par défaut en index 0
             { path: 'DB1/UD-017-Ground Stones 2.stl', pos: p0, scale: s, rot: rG, cat: 'DB1' },
             { path: 'DB1/UD-001-Wall.stl', pos: p0, scale: s, rot: rW, cat: 'DB1' },
             { path: 'DB1/UD-002-Wall Skulls 1.stl', pos: p0, scale: s, rot: rW, cat: 'DB1' },
