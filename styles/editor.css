@@ -1,0 +1,294 @@
+/* Styles de l'éditeur de niveau DungeonBuilder */
+
+#editor-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background: rgba(20, 20, 30, 0.92);
+    color: #e0e0e0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 13px;
+    overflow-y: auto;
+    z-index: 100;
+    border-right: 2px solid #444;
+    transition: transform 0.3s ease;
+    scrollbar-width: thin;
+    scrollbar-color: #555 #222;
+}
+
+#editor-panel.collapsed {
+    transform: translateX(-282px);
+}
+
+#editor-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+#editor-panel::-webkit-scrollbar-track {
+    background: #222;
+}
+
+#editor-panel::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 3px;
+}
+
+/* Header */
+.editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: rgba(40, 40, 60, 0.95);
+    border-bottom: 1px solid #555;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.editor-header h2 {
+    margin: 0;
+    font-size: 16px;
+    color: #ffa500;
+    text-shadow: 0 0 8px rgba(255, 165, 0, 0.3);
+}
+
+.editor-btn-close {
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
+    line-height: 1;
+    padding: 0;
+}
+
+/* Sections */
+.editor-section {
+    padding: 8px 12px;
+    border-bottom: 1px solid #333;
+}
+
+.editor-section h3 {
+    margin: 0 0 6px 0;
+    font-size: 12px;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Boutons */
+.editor-btn {
+    background: #333;
+    color: #ddd;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.15s;
+}
+
+.editor-btn:hover {
+    background: #444;
+    border-color: #777;
+}
+
+.editor-btn.active {
+    background: #c47b00;
+    color: #fff;
+    border-color: #ffa500;
+}
+
+.editor-btn-primary {
+    background: #2a5a8a;
+    border-color: #4a8acc;
+}
+
+.editor-btn-primary:hover {
+    background: #3a6a9a;
+}
+
+.editor-btn-danger {
+    background: #6a2a2a;
+    border-color: #aa4444;
+}
+
+.editor-btn-danger:hover {
+    background: #8a3a3a;
+}
+
+/* Modes */
+.editor-modes {
+    display: flex;
+    gap: 4px;
+}
+
+.editor-modes .mode-btn {
+    flex: 1;
+    text-align: center;
+}
+
+/* Rotation */
+.editor-rotation {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+}
+
+#rotation-display {
+    min-width: 40px;
+    text-align: center;
+    font-weight: bold;
+    color: #ffa500;
+}
+
+/* Hauteur */
+.editor-height {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+}
+
+#height-display {
+    min-width: 100px;
+    text-align: center;
+    font-weight: bold;
+    color: #88ccff;
+}
+
+/* Input recherche */
+.editor-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 5px 8px;
+    background: #222;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: #ddd;
+    font-size: 12px;
+    margin-bottom: 6px;
+}
+
+.editor-input:focus {
+    outline: none;
+    border-color: #ffa500;
+}
+
+/* Filtres catégories */
+.editor-category-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-bottom: 6px;
+}
+
+.cat-btn {
+    font-size: 11px;
+    padding: 2px 6px;
+}
+
+/* Catalogue de blocs */
+.editor-catalog {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #333;
+    border-radius: 4px;
+    background: #1a1a2a;
+}
+
+.catalog-item {
+    display: flex;
+    align-items: center;
+    padding: 4px 8px;
+    cursor: pointer;
+    border-bottom: 1px solid #2a2a3a;
+    transition: background 0.1s;
+}
+
+.catalog-item:hover {
+    background: #2a2a4a;
+}
+
+.catalog-item.selected {
+    background: #3a3a1a;
+    border-left: 3px solid #ffa500;
+}
+
+.catalog-item-index {
+    min-width: 28px;
+    color: #777;
+    font-size: 11px;
+    font-family: monospace;
+}
+
+.catalog-item-name {
+    flex: 1;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Actions */
+.editor-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.load-map-btn {
+    font-size: 11px;
+}
+
+/* Raccourcis */
+.editor-shortcuts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 11px;
+    color: #888;
+}
+
+.editor-shortcuts kbd {
+    background: #333;
+    border: 1px solid #555;
+    border-radius: 3px;
+    padding: 1px 4px;
+    font-size: 10px;
+    color: #ffa500;
+}
+
+.editor-count {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #aaa;
+}
+
+/* Info */
+.editor-info {
+    border-bottom: none;
+}
+
+/* Bouton flottant pour ouvrir l'éditeur quand fermé */
+#editor-open-btn {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 99;
+    background: rgba(40, 40, 60, 0.9);
+    color: #ffa500;
+    border: 1px solid #ffa500;
+    border-radius: 4px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    transition: all 0.15s;
+}
+
+#editor-open-btn:hover {
+    background: rgba(60, 60, 80, 0.95);
+}
