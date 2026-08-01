@@ -8,6 +8,9 @@ class DungeonView {
         this.blockMeshes = [];
         this.worldMeshes = [];
         this.ready = false;
+        // Index déjà signalés comme indisponibles : une carte de 400 dalles
+        // référençant un STL manquant produisait 400 fois le même message.
+        this.reportedMissing = new Set();
     }
 
     loadAllBlocks(blockCatalogEntries, materialConfig) {
@@ -34,7 +37,11 @@ class DungeonView {
         if (this.ready && this.blockMeshes[index]) {
             return this.blockMeshes[index];
         }
-        console.error(`Mesh at index ${index} is not ready or undefined.`);
+        if (!this.reportedMissing.has(index)) {
+            this.reportedMissing.add(index);
+            const raison = this.ready ? 'STL absent' : 'chargement non terminé';
+            console.error(`Mesh indisponible pour l'index ${index} (${raison}).`);
+        }
         return null;
     }
 

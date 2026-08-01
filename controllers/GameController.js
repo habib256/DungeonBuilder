@@ -112,6 +112,14 @@ class GameController {
             );
         }
         this.editorController.init();
+
+        // L'éditeur devient propriétaire de la carte affichée. Sans ce
+        // transfert le donjon visible appartenait à DungeonView seul : il
+        // n'était ni sélectionnable ni supprimable, "Exporter JSON" renvoyait
+        // une carte vide alors que le donjon était à l'écran, et recharger la
+        // même carte superposait une seconde copie de la géométrie.
+        this.dungeonView.clearWorld(this.sceneView.scene);
+        this.editorController.importMap(this.gameModel.getMapData());
     }
 
     reloadDungeon() {
@@ -123,9 +131,18 @@ class GameController {
         // Reconstruire avec la nouvelle carte
         this.gameModel.setLoading(true);
         const mapBlocks = this.gameModel.getMapData();
-        this.dungeonView.buildWorld(mapBlocks);
+
+        // Quand l'éditeur est actif, c'est lui qui détient la carte :
+        // reconstruire le monde en parallèle superposerait une seconde copie
+        // de la géométrie et l'export ne correspondrait plus à l'affichage.
+        if (this.editorController) {
+            this.editorController.importMap(mapBlocks);
+        } else {
+            this.dungeonView.buildWorld(mapBlocks);
+            this.dungeonView.addToScene(this.sceneView.scene);
+        }
+
         this.gameModel.setLoading(false);
-        this.dungeonView.addToScene(this.sceneView.scene);
         this.gameModel.setDungeonReady(true);
     }
 }

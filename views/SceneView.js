@@ -39,6 +39,9 @@ class SceneView {
         this.camera.aspect = window.innerWidth / window.innerHeight;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
+        // Suit un changement d'écran (fenêtre déplacée vers un moniteur
+        // de densité différente), sinon le rendu reste flou ou suréchantillonné.
+        this.renderer.setPixelRatio(window.devicePixelRatio);
     }
 
     addToScene(object) {
