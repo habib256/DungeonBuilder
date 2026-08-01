@@ -27,7 +27,6 @@ class DungeonView {
             })
             .catch(error => {
                 console.error('Erreur lors du chargement des STL:', error);
-                console.timeEnd('Chargement des STL');
             });
     }
 

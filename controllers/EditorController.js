@@ -11,10 +11,15 @@ class EditorController {
 
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
-        this.groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
         // Meshes placés dans la scène par l'éditeur
         this.editorMeshes = [];
+        // Association mesh -> entrée du modèle. Un WeakMap plutôt que
+        // mesh.userData : Object3D.copy() recopie userData via JSON, un clone
+        // perdrait donc l'identité de la référence sans que rien ne le signale.
+        this.meshToBlock = new WeakMap();
+        // Gestionnaires souris actifs (null tant que non liés)
+        this.mouseHandlers = null;
         // Mesh de prévisualisation
         this.previewMesh = null;
         this.previewBlockIndex = null;
@@ -59,6 +64,10 @@ class EditorController {
             this.updatePreview();
         };
 
+        this.editorView.onHeightChange = () => {
+            this.updatePreview();
+        };
+
         this.editorView.onClear = () => {
             this.clearAllEditorBlocks();
         };
@@ -77,23 +86,39 @@ class EditorController {
         };
     }
 
+    // Les gestionnaires sont mémorisés pour pouvoir être retirés dans
+    // destroy() : sans cela, un cycle destroy()/init() les empilait et un
+    // seul clic plaçait deux blocs.
     bindMouseEvents() {
+        if (this.mouseHandlers) return;
         const canvas = this.sceneView.renderer.domElement;
 
-        canvas.addEventListener('mousemove', (e) => {
-            this.onMouseMove(e);
-        });
+        this.mouseHandlers = {
+            mousemove: (e) => this.onMouseMove(e),
+            click: (e) => this.onMouseClick(e),
+            // La prévisualisation resterait figée dans la scène si le curseur
+            // sortait du canvas (panneau latéral, hors fenêtre).
+            mouseleave: () => this.removePreview(),
+            contextmenu: (e) => {
+                if (this.editorModel.mode !== EditorModel.MODES.VIEW) {
+                    e.preventDefault();
+                    this.onRightClick(e);
+                }
+            },
+        };
 
-        canvas.addEventListener('click', (e) => {
-            this.onMouseClick(e);
-        });
+        for (const [type, handler] of Object.entries(this.mouseHandlers)) {
+            canvas.addEventListener(type, handler);
+        }
+    }
 
-        canvas.addEventListener('contextmenu', (e) => {
-            if (this.editorModel.mode !== EditorModel.MODES.VIEW) {
-                e.preventDefault();
-                this.onRightClick(e);
-            }
-        });
+    unbindMouseEvents() {
+        if (!this.mouseHandlers) return;
+        const canvas = this.sceneView.renderer.domElement;
+        for (const [type, handler] of Object.entries(this.mouseHandlers)) {
+            canvas.removeEventListener(type, handler);
+        }
+        this.mouseHandlers = null;
     }
 
     getMousePosition(event) {
@@ -195,7 +220,7 @@ class EditorController {
         // Lier le mesh à son entrée du modèle : les deux collections peuvent
         // diverger (blocs importés sans mesh disponible), on ne peut donc pas
         // se fier à l'égalité des index.
-        clone.userData.editorBlock = this.editorModel.placedBlocks[modelIndex];
+        this.meshToBlock.set(clone, this.editorModel.placedBlocks[modelIndex]);
         this.editorMeshes.push(clone);
         this.editorView.updateBlockCount(this.editorModel.placedBlocks.length);
     }
@@ -214,9 +239,11 @@ class EditorController {
         this.sceneView.scene.remove(hitMesh);
         this.editorMeshes.splice(meshIndex, 1);
 
-        const blockIndex = this.editorModel.placedBlocks.indexOf(hitMesh.userData.editorBlock);
+        const blockIndex = this.editorModel.placedBlocks.indexOf(this.meshToBlock.get(hitMesh));
         if (blockIndex !== -1) {
             this.editorModel.removeBlock(blockIndex);
+        } else {
+            console.warn('Mesh supprimé sans entrée correspondante dans le modèle');
         }
         this.editorView.updateBlockCount(this.editorModel.placedBlocks.length);
     }
@@ -311,7 +338,7 @@ class EditorController {
             const clone = mesh.clone();
             clone.position.set(block.x, block.y, block.z);
             clone.rotation.set(block.rx, block.ry, block.rz);
-            clone.userData.editorBlock = block;
+            this.meshToBlock.set(clone, block);
             this.sceneView.scene.add(clone);
             this.editorMeshes.push(clone);
         }
@@ -320,6 +347,7 @@ class EditorController {
     }
 
     destroy() {
+        this.unbindMouseEvents();
         this.removePreview();
         this.clearAllEditorBlocks();
         this.editorView.removeGridHelper(this.sceneView.scene);

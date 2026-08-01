@@ -21,7 +21,16 @@ class EventBus {
 
     emit(event, data) {
         if (!this.listeners[event]) return;
-        this.listeners[event].forEach(callback => callback(data));
+        // Copie défensive : un listener peut s'abonner/désabonner pendant la
+        // diffusion. Chaque appel est isolé pour qu'un listener défaillant
+        // n'empêche pas les suivants d'être notifiés.
+        for (const callback of this.listeners[event].slice()) {
+            try {
+                callback(data);
+            } catch (error) {
+                console.error(`Erreur dans un listener de "${event}":`, error);
+            }
+        }
     }
 }
 

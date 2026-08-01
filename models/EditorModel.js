@@ -14,18 +14,27 @@ class EditorModel {
         this.placedBlocks = [];
         this.currentRotationY = 0;
         this.mode = EditorModel.MODES.PLACE;
-        this.gridSize = 10;
         this.isActive = false;
     }
 
+    // Les deux émetteurs de EDITOR_MODE_CHANGED publient la même forme de
+    // charge utile : un listener lisant data.mode recevait sinon undefined
+    // lors d'un simple changement d'activation.
     setActive(active) {
         this.isActive = active;
-        this.eventBus.emit(EventBus.Events.EDITOR_MODE_CHANGED, { active });
+        this.emitModeChanged();
     }
 
     setMode(mode) {
         this.mode = mode;
-        this.eventBus.emit(EventBus.Events.EDITOR_MODE_CHANGED, { mode });
+        this.emitModeChanged();
+    }
+
+    emitModeChanged() {
+        this.eventBus.emit(EventBus.Events.EDITOR_MODE_CHANGED, {
+            active: this.isActive,
+            mode: this.mode
+        });
     }
 
     selectBlock(index) {
@@ -84,11 +93,18 @@ class EditorModel {
     }
 
     // Valide une carte importée : tableau d'entrées [blockIndex, x, y, z, rx, ry, rz]
+    // blockIndex doit désigner une entrée réelle du catalogue, sinon le bloc
+    // serait conservé dans le modèle sans mesh : invisible, non supprimable,
+    // mais réexporté.
     static isValidMapData(mapData) {
-        return Array.isArray(mapData) && mapData.every(entry =>
+        if (!Array.isArray(mapData)) return false;
+        const catalogSize = BlockCatalog.getAll().length;
+
+        return mapData.every(entry =>
             Array.isArray(entry) &&
             entry.length >= 7 &&
-            entry.slice(0, 7).every(v => typeof v === 'number' && Number.isFinite(v))
+            entry.slice(0, 7).every(v => typeof v === 'number' && Number.isFinite(v)) &&
+            Number.isInteger(entry[0]) && entry[0] >= 0 && entry[0] < catalogSize
         );
     }
 
