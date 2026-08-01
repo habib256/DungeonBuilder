@@ -30,30 +30,36 @@ class STLLoaderService {
         });
     }
 
+    loadOptions(item) {
+        return {
+            position: item.pos || item.position,
+            scale: item.scale,
+            rotation: item.rot || item.rotation,
+        };
+    }
+
+    // Charge les items un par un. Un fichier manquant laisse un trou à son
+    // index au lieu de faire échouer tout le lot : les index du catalogue
+    // référencés par les cartes doivent rester alignés.
     loadSequential(items, materialConfig) {
-        const meshes = [];
-        return items.reduce((promise, item) => {
+        const meshes = new Array(items.length);
+        return items.reduce((promise, item, index) => {
             return promise.then(() =>
-                this.load(item.path, materialConfig, {
-                    position: item.pos || item.position,
-                    scale: item.scale,
-                    rotation: item.rot || item.rotation,
-                }).then(mesh => {
-                    meshes.push(mesh);
-                })
+                this.load(item.path, materialConfig, this.loadOptions(item))
+                    .then(mesh => { meshes[index] = mesh; })
+                    .catch(() => { meshes[index] = undefined; })
             );
         }, Promise.resolve()).then(() => meshes);
     }
 
+    // Charge tout en parallèle ; les items en échec sont simplement absents
+    // du résultat plutôt que de rejeter l'ensemble.
     loadParallel(items, materialConfig) {
         return Promise.all(
             items.map(item =>
-                this.load(item.path, materialConfig, {
-                    position: item.pos || item.position,
-                    scale: item.scale,
-                    rotation: item.rot || item.rotation,
-                })
+                this.load(item.path, materialConfig, this.loadOptions(item))
+                    .catch(() => null)
             )
-        );
+        ).then(meshes => meshes.filter(mesh => mesh !== null));
     }
 }

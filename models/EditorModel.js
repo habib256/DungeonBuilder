@@ -34,8 +34,10 @@ class EditorModel {
     }
 
     rotateBlock(direction) {
-        this.currentRotationY += direction * (Math.PI / 2);
-        this.currentRotationY = this.currentRotationY % (Math.PI * 2);
+        const TWO_PI = Math.PI * 2;
+        // Normaliser dans [0, 2PI) : le modulo JS garde le signe de l'opérande
+        // gauche et produirait des angles négatifs en tournant vers la gauche
+        this.currentRotationY = ((this.currentRotationY + direction * (Math.PI / 2)) % TWO_PI + TWO_PI) % TWO_PI;
         this.eventBus.emit(EventBus.Events.EDITOR_ROTATION_CHANGED, {
             rotationY: this.currentRotationY
         });
@@ -66,7 +68,11 @@ class EditorModel {
         const catalog = BlockCatalog.getAll();
         const blockDef = catalog[blockIndex];
         if (!blockDef) return { x: -Math.PI / 2, y: 0, z: Math.PI / 2 };
-        return { x: blockDef.rot.x, y: blockDef.rot.y + this.currentRotationY, z: blockDef.rot.z };
+        // Les STL sont modélisés en Z-up et redressés par rx = -PI/2.
+        // Avec l'ordre d'Euler XYZ (R = Rx.Ry.Rz), le lacet autour de la
+        // verticale du monde correspond donc à rz, pas à ry : ajouter la
+        // rotation à ry ferait basculer le bloc sur le côté.
+        return { x: blockDef.rot.x, y: blockDef.rot.y, z: blockDef.rot.z + this.currentRotationY };
     }
 
     exportMap() {
@@ -77,7 +83,19 @@ class EditorModel {
         return exported;
     }
 
+    // Valide une carte importée : tableau d'entrées [blockIndex, x, y, z, rx, ry, rz]
+    static isValidMapData(mapData) {
+        return Array.isArray(mapData) && mapData.every(entry =>
+            Array.isArray(entry) &&
+            entry.length >= 7 &&
+            entry.slice(0, 7).every(v => typeof v === 'number' && Number.isFinite(v))
+        );
+    }
+
     importMap(mapData) {
+        if (!EditorModel.isValidMapData(mapData)) {
+            throw new Error('Format de carte invalide : tableau de [blockIndex, x, y, z, rx, ry, rz] attendu');
+        }
         this.clearAllBlocks();
         for (const [blockIndex, x, y, z, rx, ry, rz] of mapData) {
             this.placedBlocks.push({ blockIndex, x, y, z, rx, ry, rz });

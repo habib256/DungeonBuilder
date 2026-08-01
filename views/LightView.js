@@ -12,6 +12,15 @@ class LightView {
             let light;
             if (data.type === 'point') {
                 light = new THREE.PointLight(data.color, data.intensity);
+            } else if (data.type === 'directional') {
+                light = new THREE.DirectionalLight(data.color, data.intensity);
+            } else if (data.type === 'ambient') {
+                light = new THREE.AmbientLight(data.color, data.intensity);
+            } else {
+                // Sans ce garde-fou, un type inconnu provoquait un TypeError
+                // sur light.position et cassait toute la création des lumières.
+                console.warn(`Type de lumière inconnu: ${data.type}`);
+                continue;
             }
             light.position.set(data.position.x, data.position.y, data.position.z);
             light.castShadow = data.castShadow;

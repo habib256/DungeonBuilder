@@ -19,6 +19,10 @@ class DungeonView {
                 this.blockMeshes = meshes;
                 this.ready = true;
                 console.timeEnd('Chargement des STL');
+                const missing = meshes.filter(m => !m).length;
+                if (missing > 0) {
+                    console.warn(`${missing}/${meshes.length} blocs STL n'ont pas pu être chargés`);
+                }
                 this.eventBus.emit(EventBus.Events.DUNGEON_BLOCKS_LOADED);
             })
             .catch(error => {
@@ -39,10 +43,7 @@ class DungeonView {
         this.worldMeshes = [];
         for (const [index, x, y, z, rx, ry, rz] of mapBlocks) {
             const originalMesh = this.getBlockMesh(index);
-            if (!originalMesh) {
-                console.error(`Mesh at index ${index} is undefined.`);
-                continue;
-            }
+            if (!originalMesh) continue;
             const mesh = originalMesh.clone();
             mesh.position.set(x, y, z);
             mesh.rotation.set(rx, ry, rz);

@@ -17,6 +17,13 @@ class EditorView {
         this.onImport = null;
         this.onLoadExistingMap = null;
         this.gridHelper = null;
+        this.keydownHandler = null;
+        this.currentCategory = 'all';
+        this.currentSearch = '';
+        // Lu par EditorController dès le premier mousemove : doit exister
+        // même si bindEvents() n'a pas encore tourné.
+        this.currentHeight = 0.7;
+        this.heightLevel = 0; // 0 = sol, 1 = mur, etc.
     }
 
     create() {
@@ -157,19 +164,26 @@ class EditorView {
     }
 
     filterByCategory(cat) {
-        const items = this.catalogContainer.querySelectorAll('.catalog-item');
+        this.currentCategory = cat;
         const buttons = this.container.querySelectorAll('.cat-btn');
-
         buttons.forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.cat === cat || (cat === 'all' && btn.dataset.cat === 'all'));
+            btn.classList.toggle('active', btn.dataset.cat === cat);
         });
+        this.applyCatalogFilters();
+    }
 
-        items.forEach(item => {
-            if (cat === 'all' || item.dataset.cat === cat) {
-                item.style.display = '';
-            } else {
-                item.style.display = 'none';
-            }
+    // Catégorie et recherche sont deux filtres cumulatifs : les appliquer
+    // séparément faisait réapparaître les blocs exclus par l'autre.
+    applyCatalogFilters() {
+        if (!this.catalogContainer) return;
+        const q = this.currentSearch;
+        const cat = this.currentCategory;
+
+        this.catalogContainer.querySelectorAll('.catalog-item').forEach(item => {
+            const matchesCat = (cat === 'all' || item.dataset.cat === cat);
+            const name = item.querySelector('.catalog-item-name').textContent.toLowerCase();
+            const matchesSearch = (q === '' || name.includes(q));
+            item.style.display = (matchesCat && matchesSearch) ? '' : 'none';
         });
     }
 
@@ -199,8 +213,6 @@ class EditorView {
         });
 
         // Hauteur
-        this.currentHeight = 0.7;
-        this.heightLevel = 0; // 0 = sol, 1 = mur, etc.
         document.getElementById('height-down').addEventListener('click', () => {
             this.heightLevel = Math.max(-2, this.heightLevel - 1);
             this.updateHeight();
@@ -258,8 +270,11 @@ class EditorView {
             });
         });
 
-        // Raccourcis clavier
-        document.addEventListener('keydown', (e) => {
+        // Raccourcis clavier (référence conservée pour pouvoir se désabonner
+        // dans destroy(), sinon le listener survit au panneau détruit)
+        this.keydownHandler = (e) => {
+            if (!this.container) return;
+
             // Ignorer si on tape dans un input
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
@@ -284,7 +299,8 @@ class EditorView {
                     this.container.classList.toggle('collapsed');
                     break;
             }
-        });
+        };
+        document.addEventListener('keydown', this.keydownHandler);
     }
 
     updateHeight() {
@@ -300,16 +316,13 @@ class EditorView {
         };
         const h = heights[this.heightLevel] || heights['0'];
         this.currentHeight = h.value;
-        document.getElementById('height-display').textContent = h.label;
+        const display = document.getElementById('height-display');
+        if (display) display.textContent = h.label;
     }
 
     searchBlocks(query) {
-        const items = this.catalogContainer.querySelectorAll('.catalog-item');
-        const q = query.toLowerCase();
-        items.forEach(item => {
-            const name = item.querySelector('.catalog-item-name').textContent.toLowerCase();
-            item.style.display = name.includes(q) ? '' : 'none';
-        });
+        this.currentSearch = query.trim().toLowerCase();
+        this.applyCatalogFilters();
     }
 
     setSelectedBlock(index) {
@@ -329,9 +342,16 @@ class EditorView {
     }
 
     updateModeButtons() {
-        document.getElementById('mode-place').classList.toggle('active', this.currentMode === EditorModel.MODES.PLACE);
-        document.getElementById('mode-delete').classList.toggle('active', this.currentMode === EditorModel.MODES.DELETE);
-        document.getElementById('mode-view').classList.toggle('active', this.currentMode === EditorModel.MODES.VIEW);
+        if (!this.container) return;
+        const modes = {
+            'mode-place': EditorModel.MODES.PLACE,
+            'mode-delete': EditorModel.MODES.DELETE,
+            'mode-view': EditorModel.MODES.VIEW
+        };
+        for (const [id, mode] of Object.entries(modes)) {
+            const btn = document.getElementById(id);
+            if (btn) btn.classList.toggle('active', this.currentMode === mode);
+        }
     }
 
     updateRotationDisplay() {
@@ -367,9 +387,14 @@ class EditorView {
     }
 
     destroy() {
+        if (this.keydownHandler) {
+            document.removeEventListener('keydown', this.keydownHandler);
+            this.keydownHandler = null;
+        }
         if (this.container) {
             this.container.remove();
             this.container = null;
         }
+        this.catalogContainer = null;
     }
 }
