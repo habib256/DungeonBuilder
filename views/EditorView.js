@@ -2,6 +2,21 @@
 // Panneau latéral avec catalogue de blocs, outils et export/import
 
 class EditorView {
+    // Paliers de hauteur, triés par valeur croissante : le bouton "+" doit
+    // toujours monter (l'ancienne table plaçait "Mur (0)" au-dessus de
+    // "Sol (0.7)" et "+" faisait donc descendre le bloc).
+    static HEIGHT_LEVELS = [
+        { label: 'Sous-sol (-6.3)', value: -6.3 },
+        { label: 'Bas (-3.5)', value: -3.5 },
+        { label: 'Mur (0)', value: 0 },
+        { label: 'Sol (0.7)', value: 0.7 },
+        { label: 'Etage 1 (3.5)', value: 3.5 },
+        { label: 'Etage 2 (7)', value: 7 },
+        { label: 'Etage 3 (10.5)', value: 10.5 },
+        { label: 'Etage 4 (14)', value: 14 },
+    ];
+    static DEFAULT_HEIGHT_LEVEL = 3; // Sol (0.7)
+
     constructor(eventBus) {
         this.eventBus = eventBus;
         this.container = null;
@@ -17,6 +32,15 @@ class EditorView {
         this.onImport = null;
         this.onLoadExistingMap = null;
         this.gridHelper = null;
+        this.openButton = null;
+        this.keydownHandler = null;
+        this.onHeightChange = null;
+        this.currentCategory = 'all';
+        this.currentSearch = '';
+        // Lu par EditorController dès le premier mousemove : doit exister
+        // même si bindEvents() n'a pas encore tourné.
+        this.heightLevel = EditorView.DEFAULT_HEIGHT_LEVEL;
+        this.currentHeight = EditorView.HEIGHT_LEVELS[this.heightLevel].value;
     }
 
     create() {
@@ -24,6 +48,7 @@ class EditorView {
         this.container.id = 'editor-panel';
         this.container.innerHTML = this.buildHTML();
         document.body.appendChild(this.container);
+        this.createOpenButton();
         this.bindEvents();
         this.buildCatalog();
         this.updateModeButtons();
@@ -106,6 +131,28 @@ class EditorView {
         `;
     }
 
+    // Le panneau replié sort entièrement de l'écran avec son bouton de
+    // fermeture : sans ce bouton flottant (déjà prévu par la CSS) il ne
+    // restait que le raccourci Tab, décrit dans le panneau devenu invisible.
+    createOpenButton() {
+        this.openButton = document.createElement('button');
+        this.openButton.id = 'editor-open-btn';
+        this.openButton.textContent = 'Editeur';
+        this.openButton.title = 'Ouvrir l\'éditeur (Tab)';
+        this.openButton.addEventListener('click', () => this.setCollapsed(false));
+        document.body.appendChild(this.openButton);
+    }
+
+    setCollapsed(collapsed) {
+        if (!this.container) return;
+        this.container.classList.toggle('collapsed', collapsed);
+        if (this.openButton) this.openButton.classList.toggle('visible', collapsed);
+    }
+
+    toggleCollapsed() {
+        this.setCollapsed(!this.container.classList.contains('collapsed'));
+    }
+
     buildCatalog() {
         this.catalogContainer = document.getElementById('block-catalog');
         const catalog = BlockCatalog.getAll();
@@ -157,26 +204,33 @@ class EditorView {
     }
 
     filterByCategory(cat) {
-        const items = this.catalogContainer.querySelectorAll('.catalog-item');
+        this.currentCategory = cat;
         const buttons = this.container.querySelectorAll('.cat-btn');
-
         buttons.forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.cat === cat || (cat === 'all' && btn.dataset.cat === 'all'));
+            btn.classList.toggle('active', btn.dataset.cat === cat);
         });
+        this.applyCatalogFilters();
+    }
 
-        items.forEach(item => {
-            if (cat === 'all' || item.dataset.cat === cat) {
-                item.style.display = '';
-            } else {
-                item.style.display = 'none';
-            }
+    // Catégorie et recherche sont deux filtres cumulatifs : les appliquer
+    // séparément faisait réapparaître les blocs exclus par l'autre.
+    applyCatalogFilters() {
+        if (!this.catalogContainer) return;
+        const q = this.currentSearch;
+        const cat = this.currentCategory;
+
+        this.catalogContainer.querySelectorAll('.catalog-item').forEach(item => {
+            const matchesCat = (cat === 'all' || item.dataset.cat === cat);
+            const name = item.querySelector('.catalog-item-name').textContent.toLowerCase();
+            const matchesSearch = (q === '' || name.includes(q));
+            item.style.display = (matchesCat && matchesSearch) ? '' : 'none';
         });
     }
 
     bindEvents() {
         // Toggle panneau
         document.getElementById('editor-toggle').addEventListener('click', () => {
-            this.container.classList.toggle('collapsed');
+            this.toggleCollapsed();
         });
 
         // Modes
@@ -199,14 +253,12 @@ class EditorView {
         });
 
         // Hauteur
-        this.currentHeight = 0.7;
-        this.heightLevel = 0; // 0 = sol, 1 = mur, etc.
         document.getElementById('height-down').addEventListener('click', () => {
-            this.heightLevel = Math.max(-2, this.heightLevel - 1);
+            this.heightLevel = Math.max(0, this.heightLevel - 1);
             this.updateHeight();
         });
         document.getElementById('height-up').addEventListener('click', () => {
-            this.heightLevel = Math.min(5, this.heightLevel + 1);
+            this.heightLevel = Math.min(EditorView.HEIGHT_LEVELS.length - 1, this.heightLevel + 1);
             this.updateHeight();
         });
 
@@ -244,6 +296,9 @@ class EditorView {
                     alert('Fichier JSON invalide');
                 }
             };
+            reader.onerror = () => {
+                alert('Impossible de lire le fichier');
+            };
             reader.readAsText(file);
             e.target.value = '';
         });
@@ -258,8 +313,11 @@ class EditorView {
             });
         });
 
-        // Raccourcis clavier
-        document.addEventListener('keydown', (e) => {
+        // Raccourcis clavier (référence conservée pour pouvoir se désabonner
+        // dans destroy(), sinon le listener survit au panneau détruit)
+        this.keydownHandler = (e) => {
+            if (!this.container) return;
+
             // Ignorer si on tape dans un input
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
@@ -281,35 +339,28 @@ class EditorView {
                     break;
                 case 'tab':
                     e.preventDefault();
-                    this.container.classList.toggle('collapsed');
+                    this.toggleCollapsed();
                     break;
             }
-        });
+        };
+        document.addEventListener('keydown', this.keydownHandler);
     }
 
     updateHeight() {
-        const heights = {
-            '-2': { label: 'Sous-sol (-6.3)', value: -6.3 },
-            '-1': { label: 'Bas (-3.5)', value: -3.5 },
-            '0': { label: 'Sol (0.7)', value: 0.7 },
-            '1': { label: 'Mur (0)', value: 0 },
-            '2': { label: 'Etage 1 (3.5)', value: 3.5 },
-            '3': { label: 'Etage 2 (7)', value: 7 },
-            '4': { label: 'Etage 3 (10.5)', value: 10.5 },
-            '5': { label: 'Etage 4 (14)', value: 14 }
-        };
-        const h = heights[this.heightLevel] || heights['0'];
+        const h = EditorView.HEIGHT_LEVELS[this.heightLevel] ||
+            EditorView.HEIGHT_LEVELS[EditorView.DEFAULT_HEIGHT_LEVEL];
         this.currentHeight = h.value;
-        document.getElementById('height-display').textContent = h.label;
+        const display = document.getElementById('height-display');
+        if (display) display.textContent = h.label;
+        // La grille et la prévisualisation restaient sinon à l'ancienne
+        // hauteur jusqu'au prochain mouvement de souris.
+        this.setGridHeight(this.currentHeight);
+        if (this.onHeightChange) this.onHeightChange(this.currentHeight);
     }
 
     searchBlocks(query) {
-        const items = this.catalogContainer.querySelectorAll('.catalog-item');
-        const q = query.toLowerCase();
-        items.forEach(item => {
-            const name = item.querySelector('.catalog-item-name').textContent.toLowerCase();
-            item.style.display = name.includes(q) ? '' : 'none';
-        });
+        this.currentSearch = query.trim().toLowerCase();
+        this.applyCatalogFilters();
     }
 
     setSelectedBlock(index) {
@@ -329,9 +380,16 @@ class EditorView {
     }
 
     updateModeButtons() {
-        document.getElementById('mode-place').classList.toggle('active', this.currentMode === EditorModel.MODES.PLACE);
-        document.getElementById('mode-delete').classList.toggle('active', this.currentMode === EditorModel.MODES.DELETE);
-        document.getElementById('mode-view').classList.toggle('active', this.currentMode === EditorModel.MODES.VIEW);
+        if (!this.container) return;
+        const modes = {
+            'mode-place': EditorModel.MODES.PLACE,
+            'mode-delete': EditorModel.MODES.DELETE,
+            'mode-view': EditorModel.MODES.VIEW
+        };
+        for (const [id, mode] of Object.entries(modes)) {
+            const btn = document.getElementById(id);
+            if (btn) btn.classList.toggle('active', this.currentMode === mode);
+        }
     }
 
     updateRotationDisplay() {
@@ -351,25 +409,43 @@ class EditorView {
     }
 
     createGridHelper(scene) {
-        if (this.gridHelper) scene.remove(this.gridHelper);
+        this.removeGridHelper(scene);
         const size = 20 * MapData.GRID_SPACING;
         const divisions = 20;
         this.gridHelper = new THREE.GridHelper(size, divisions, 0x444444, 0x222222);
-        this.gridHelper.position.y = 0.01;
         scene.add(this.gridHelper);
+        this.setGridHeight(this.currentHeight);
+    }
+
+    // Léger décalage pour éviter le z-fighting avec les dalles posées au sol
+    setGridHeight(y) {
+        if (this.gridHelper) this.gridHelper.position.y = y + 0.01;
     }
 
     removeGridHelper(scene) {
         if (this.gridHelper) {
             scene.remove(this.gridHelper);
+            // La grille possède sa propre géométrie : un cycle
+            // destroy()/init() en abandonnait une à chaque passage.
+            if (this.gridHelper.geometry) this.gridHelper.geometry.dispose();
+            if (this.gridHelper.material) this.gridHelper.material.dispose();
             this.gridHelper = null;
         }
     }
 
     destroy() {
+        if (this.keydownHandler) {
+            document.removeEventListener('keydown', this.keydownHandler);
+            this.keydownHandler = null;
+        }
         if (this.container) {
             this.container.remove();
             this.container = null;
         }
+        if (this.openButton) {
+            this.openButton.remove();
+            this.openButton = null;
+        }
+        this.catalogContainer = null;
     }
 }

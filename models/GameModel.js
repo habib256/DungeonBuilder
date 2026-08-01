@@ -23,6 +23,9 @@ class GameModel {
         this.isDungeonReady = ready;
         if (ready) {
             this.eventBus.emit(EventBus.Events.DUNGEON_BUILT);
+            // Symétrique de setEntitiesReady : sinon GAME_READY n'est jamais
+            // émis quand les entités sont prêtes avant le donjon.
+            this.checkGameReady();
         }
     }
 

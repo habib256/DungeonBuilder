@@ -274,6 +274,7 @@
 
 /* Bouton flottant pour ouvrir l'éditeur quand fermé */
 #editor-open-btn {
+    display: none;
     position: fixed;
     top: 10px;
     left: 10px;
@@ -287,6 +288,10 @@
     font-size: 13px;
     font-family: 'Segoe UI', Arial, sans-serif;
     transition: all 0.15s;
+}
+
+#editor-open-btn.visible {
+    display: block;
 }
 
 #editor-open-btn:hover {
