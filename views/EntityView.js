@@ -20,7 +20,15 @@ class EntityView {
     }
 
     clearEntities(scene) {
-        this.meshes.forEach(mesh => scene.remove(mesh));
+        this.meshes.forEach(mesh => {
+            scene.remove(mesh);
+            // Contrairement aux blocs du donjon (clones partageant la
+            // géométrie du catalogue), chaque entité possède sa géométrie et
+            // son matériau : sans libération explicite, chaque rechargement
+            // en abandonnait un exemplaire sur le GPU.
+            if (mesh.geometry) mesh.geometry.dispose();
+            if (mesh.material) mesh.material.dispose();
+        });
         this.meshes = [];
     }
 }

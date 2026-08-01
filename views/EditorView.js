@@ -409,7 +409,7 @@ class EditorView {
     }
 
     createGridHelper(scene) {
-        if (this.gridHelper) scene.remove(this.gridHelper);
+        this.removeGridHelper(scene);
         const size = 20 * MapData.GRID_SPACING;
         const divisions = 20;
         this.gridHelper = new THREE.GridHelper(size, divisions, 0x444444, 0x222222);
@@ -425,6 +425,10 @@ class EditorView {
     removeGridHelper(scene) {
         if (this.gridHelper) {
             scene.remove(this.gridHelper);
+            // La grille possède sa propre géométrie : un cycle
+            // destroy()/init() en abandonnait une à chaque passage.
+            if (this.gridHelper.geometry) this.gridHelper.geometry.dispose();
+            if (this.gridHelper.material) this.gridHelper.material.dispose();
             this.gridHelper = null;
         }
     }
